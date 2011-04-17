@@ -28,15 +28,61 @@ Show the help text for Gerphast
 static void kswift_show_help (const char *d)
 {
 
-	fprintf(stderr, "Usage: %s [OPTIONS]\n", d);
-	fprintf(stderr, " -h <host>     Hostname or IP of php-fpm server\n");
-	fprintf(stderr, " -p <port>     Port number of php-fpm server\n");
-	fprintf(stderr, " -d <driver>   Driver to use (gearman, zmq)\n");
-	fprintf(stderr, " -m <host>     Hostname/IP address of message server\n");
-	fprintf(stderr, " -P <port>     Port number of message server\n");
-	fprintf(stderr, " -f <handle>   Message queue handle\n");
-	fprintf(stderr, " -n <number>   Number of kswift request threads\n");
+	fprintf(stderr, "\nUsage: %s [OPTIONS]\n", d);
+	fprintf(stderr, "\t-h <host>     Hostname or IP of fast-cgi server\n");
+	fprintf(stderr, "\t-p <port>     Port number of fast-cgi server\n");
+	fprintf(stderr, "\t-q <queue>    Message queue use (gearman, zmq)\n");
+	fprintf(stderr, "\t-d            Daemonize the process\n");
+	fprintf(stderr, "\t-m <host>     Hostname/IP address of message server\n");
+	fprintf(stderr, "\t-P <port>     Port number of message server\n");
+	fprintf(stderr, "\t-f <handle>   Message queue handle\n");
+	fprintf(stderr, "\t-n <number>   Number of kswift request threads\n");
 
+}
+
+/*
+Handle the background running of kswift
+*/
+static bool kswift_background()
+{
+	pid_t pid, sid;
+
+	fprintf(stderr, " DEBUG  forking process...");
+
+	pid = fork();
+
+	if (pid < 0)
+	{
+		/* Fork failed */
+		fprintf(stderr, "Failed to create background process!");
+		return false;
+	}
+
+	if (pid > 0)
+	{
+		/* Exit parent process */
+		return false;
+	}
+
+	/* Change the file mode */
+	umask(0);
+
+	/* Create the SID for the child process */
+	sid = setsid();
+
+	if (sid < 0)
+	{
+		/* Child process SID failed initialization */
+		fprintf(stderr, "setsid failed with error: %s", strerror(errno));
+		return false;
+	}
+
+	/* Reopen standard I/O */
+	(void) freopen("/dev/null", "r", stdin);
+	(void) freopen("/dev/null", "w", stdout);
+	(void) freopen("/dev/null", "w", sdterr);
+
+	return true;
 }
 
 /*
@@ -47,7 +93,7 @@ int main (int argc, char **argv)
 
 	struct kswift_options options, *poptions;
 	int c, runner_count;
-	kswift_driver driver;
+	bool daemonize = false;
 
 	poptions = &options;
 
@@ -67,38 +113,46 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	// Get the arguments
+	/* Get and set arguments */
 	while ((c = getopt(argc, argv, "h:p:d:m:P:f:n:")) != -1 )
 	{
 		switch (c)
 		{
 			case 'h':
 				poptions->fpm_host = optarg;
-				printf(" DEBUG  php-fpm host set to: %s\n", poptions->fpm_host);
+				fprintf(stderr, " DEBUG  fast-cgi host set to: %s\n", poptions->fpm_host);
 			break;
 			case 'p':
 				poptions->fpm_port = atoi(optarg);
-				printf(" DEBUG  php-fpm port set to: %i\n", poptions->fpm_port);
+				fprintf(stderr, " DEBUG  fast-cgi port set to: %i\n", poptions->fpm_port);
 			break;
 			case 'd':
-				
+				daemonize = true;
+			break;
+			case 'q':
+				poptions->queue = optarg;
 
-//				poptions->driver = optarg;
-//				printf(" DEBUG  driver set to: %s\n", poptions->driver);
+				if (strcmp(poptions->queue, "zmq") != 0 && strcmp(poptions->queue, "gearman") != 0)
+				{
+					fprintf(stderr, " ERROR  driver not known: %s\n", optarg);
+					kswift_show_help(argv[0]);
+					exit;
+				}
+				fprintf(stderr, " DEBUG  driver set to: %s\n", poptions->queue);
 			break;
 			case 'm':
 				poptions->msg_host = optarg;
-				printf(" DEBUG  message server host set to: %s\n", 
+				fprintf(stderr, " DEBUG  message server host set to: %s\n", 
 					poptions->msg_host);
 			break;
 			case 'P':
 				poptions->msg_port = atoi(optarg);
-				printf(" DEBUG  message server port set to: %i\n", 
+				fprintf(stderr, " DEBUG  message server port set to: %i\n", 
 					poptions->msg_port);
 			break;
 			case 'f':
 				poptions->msg_register = optarg;
-				printf(" DEBUG  callback function set: %s\n", 
+				fprintf(stderr, " DEBUG  callback function set: %s\n", 
 					poptions->msg_register);
 			break;
 			case 'n':
@@ -112,11 +166,12 @@ int main (int argc, char **argv)
 					runner_count = 1;
 				}
 				poptions->kswift_threads = runner_count;
-				printf(" DEBUG  request runners: %i\n", poptions->kswift_threads);
+				fprintf(stderr, " DEBUG  request runners: %i\n", poptions->kswift_threads);
 			break;
 			default:
 				kswift_show_help(argv[0]);
 				exit(1);
+			break;
 		}
 	}
 
@@ -126,10 +181,13 @@ int main (int argc, char **argv)
 		fprintf(stderr, "signal:%d\n", errno);
 	}
 
-	// Begin run loop
-	while (1)
+	/* If run in background */
+	if (daemonize)
 	{
-		sleep(1);
+		if (kswift_background() == false)
+		{
+			exit(1);
+		}
 	}
 
 	exit(0);

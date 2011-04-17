@@ -19,17 +19,12 @@
 */
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
 #include <signal.h>
-
-typedef enum
-{
-	KSWIFT_DRIVER_GEARMAN=0,
-	KSWIFT_DRIVER_ZEROMQ=1
-} kswift_driver;
+#include <string.h>
+#include <unistd.h>
 
 struct kswift_options
 {
@@ -37,20 +32,21 @@ struct kswift_options
 	char *fpm_host;
 
 	/* Port number of php-fpm server */
-	int fpm_port;
+	uint8_t fpm_port;
 
-	/* Message driver to use */
-	enum kswift_dirver *driver;
+	/* Message queue to use */
+	char *queue;
 
 	/* Message server host */
 	char *msg_host;
 
 	/* Message server port */
-	int msg_port;
+	uint8_t msg_port;
 
 	/* Message server register name */
 	char *msg_register;
 
 	/* Number of request threads */
-	int kswift_threads;
+	uint8_t kswift_threads;
 };
+
