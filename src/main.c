@@ -47,14 +47,14 @@ static bool kswift_background()
 {
 	pid_t pid, sid;
 
-	fprintf(stderr, " DEBUG  forking process...");
+	fprintf(stderr, " DEBUG  forking process...\n");
 
 	pid = fork();
 
 	if (pid < 0)
 	{
 		/* Fork failed */
-		fprintf(stderr, "Failed to create background process!");
+		fprintf(stderr, "Failed to create background process!\n");
 		return false;
 	}
 
@@ -73,14 +73,14 @@ static bool kswift_background()
 	if (sid < 0)
 	{
 		/* Child process SID failed initialization */
-		fprintf(stderr, "setsid failed with error: %s", strerror(errno));
+		fprintf(stderr, "setsid failed with error: %s\n", strerror(errno));
 		return false;
 	}
 
 	/* Reopen standard I/O */
 	(void) freopen("/dev/null", "r", stdin);
 	(void) freopen("/dev/null", "w", stdout);
-	(void) freopen("/dev/null", "w", sdterr);
+	(void) freopen("/dev/null", "w", stderr);
 
 	return true;
 }
@@ -92,16 +92,17 @@ int main (int argc, char **argv)
 {
 
 	struct kswift_options options, *poptions;
-	int c, runner_count;
+	int c;
+	uint16_t runner_count;
 	bool daemonize = false;
 
 	poptions = &options;
 
-	/* Initialise php-fpm and gearman defaults */
-	poptions->fpm_host = "127.0.0.1";
-	poptions->fpm_port = 9000;
-	poptions->msg_host = "127.0.0.1";
-	poptions->msg_port = 4730;
+	/* Initialise fastcgi and gearman defaults */
+	poptions->fcgi_host = "localhost";
+	poptions->fcgi_port = (uint16_t) 9000;
+	poptions->msg_host = "localhost";
+	poptions->msg_port = (uint16_t) 4730;
 	poptions->msg_register  = "kswift_request_thread";
 
 	/* Initialise request runners default */
@@ -114,17 +115,17 @@ int main (int argc, char **argv)
 	}
 
 	/* Get and set arguments */
-	while ((c = getopt(argc, argv, "h:p:d:m:P:f:n:")) != -1 )
+	while ((c = getopt(argc, argv, "h:p:dq:m:P:f:n:")) != -1 )
 	{
 		switch (c)
 		{
 			case 'h':
-				poptions->fpm_host = optarg;
-				fprintf(stderr, " DEBUG  fast-cgi host set to: %s\n", poptions->fpm_host);
+				poptions->fcgi_host = optarg;
+				fprintf(stderr, " DEBUG  fast-cgi host set to: %s\n", poptions->fcgi_host);
 			break;
 			case 'p':
-				poptions->fpm_port = atoi(optarg);
-				fprintf(stderr, " DEBUG  fast-cgi port set to: %i\n", poptions->fpm_port);
+				poptions->fcgi_port = (uint16_t) atoi(optarg);
+				fprintf(stderr, " DEBUG  fast-cgi port set to: %i\n", poptions->fcgi_port);
 			break;
 			case 'd':
 				daemonize = true;
@@ -146,7 +147,7 @@ int main (int argc, char **argv)
 					poptions->msg_host);
 			break;
 			case 'P':
-				poptions->msg_port = atoi(optarg);
+				poptions->msg_port = (uint16_t) atoi(optarg);
 				fprintf(stderr, " DEBUG  message server port set to: %i\n", 
 					poptions->msg_port);
 			break;
@@ -156,12 +157,12 @@ int main (int argc, char **argv)
 					poptions->msg_register);
 			break;
 			case 'n':
-				runner_count = atoi(optarg);
+				runner_count = (uint16_t) atoi(optarg);
 				if (runner_count > KSWIFT_MAX_THREADS)
 				{
 					runner_count = KSWIFT_MAX_THREADS;
 				}
-				else if (runner_count < 0)
+				else
 				{
 					runner_count = 1;
 				}
@@ -189,6 +190,8 @@ int main (int argc, char **argv)
 			exit(1);
 		}
 	}
+
+	
 
 	exit(0);
 }

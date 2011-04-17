@@ -20,6 +20,8 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -29,10 +31,10 @@
 struct kswift_options
 {
 	/* Hostname of php-fpm server */
-	char *fpm_host;
+	char *fcgi_host;
 
 	/* Port number of php-fpm server */
-	uint8_t fpm_port;
+	uint16_t fcgi_port;
 
 	/* Message queue to use */
 	char *queue;
@@ -41,12 +43,12 @@ struct kswift_options
 	char *msg_host;
 
 	/* Message server port */
-	uint8_t msg_port;
+	uint16_t msg_port;
 
 	/* Message server register name */
 	char *msg_register;
 
 	/* Number of request threads */
-	uint8_t kswift_threads;
+	uint16_t kswift_threads;
 };
 
