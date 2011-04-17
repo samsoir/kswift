@@ -1,6 +1,6 @@
-# Gerphast
-## The Gearman to php-fpm bridge for Kohana asynchronous requests
+# Kohana Swift
+## Asynchronous Request Handler for Kohana
 
-A C utility to allow Gearman to bridge directly to PHP-FPM using the FastCGI
-interface. This will allow the use of Gearman to run multiple asynchronous
-requests from within Kohana without having to use an inefficient PHP run loop.
+A C utility to allow Kohana to bridge directly to PHP-FPM using the FastCGI
+interface via a message queue such as ZeroMQ or Gearman. This is very much
+work in progress at the moment.
