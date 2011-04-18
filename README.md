@@ -5,5 +5,21 @@ A C utility to allow Kohana to bridge directly to FastCGI interface via a messag
 
 # Concept
 
-Provide a bridge between Kohana Asynchronous Request Pool and processors using
-a message queue. The Kohana Asynchronous Request Pool 
+Provide a bridge between Kohana Asynchronous Request pool and request 
+execution using a message queue. The Kohana Asynchronous Request pool packages
+the Kohana Requests contained within, then passes them to the message queue.
+
+The message queue has a number of execution threads available, which handle
+each request individually.
+
+- Internal requests are passed back to a PHP process via FastCGI.
+- External requests are handled by kswift internally.
+
+                                                                +---------+
+    +--------+            +----+            +---------+    +--> | FastCGI |
+    | Kohana | -- Req --> | MQ | -- Msg --> | pthread |+   |    +---------+
+    +--------+            +----+            +---------+| --+
+                                             +---------+   |    +------+
+                                                           +--> | HTTP |
+                                                                +------+
+
