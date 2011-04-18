@@ -15,6 +15,7 @@ each request individually.
 - Internal requests are passed back to a PHP process via FastCGI.
 - External requests are handled by kswift internally.
 
+<code>
                                                                 +---------+
     +--------+            +----+            +---------+    +--> | FastCGI |
     | Kohana | -- Req --> | MQ | -- Msg --> | pthread |+   |    +---------+
@@ -22,4 +23,4 @@ each request individually.
                                              +---------+   |    +------+
                                                            +--> | HTTP |
                                                                 +------+
-
+</code>
